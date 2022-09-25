@@ -1,11 +1,10 @@
 use clap::{Parser, Subcommand};
-
+mod providers;
 
 #[derive(Parser)] // requires `derive` feature
 #[clap(author, version)]
 #[clap(name = "speed")]
 #[clap(about = "a swiss army knife of internet speed tests", long_about = None)]
-#[clap(propagate_version = true)]
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
@@ -13,15 +12,15 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    #[clap(alias="cf")]
+    #[clap(alias = "cf")]
     #[clap(about = "Run speed test using speed.cloudflare.com (shorthand: cf)", long_about = None)]
     Cloudflare,
 
-    #[clap(alias="nf")]
+    #[clap(alias = "nf")]
     #[clap(about = "Run speed test using fast.com (shorthand: fs)", long_about = None)]
     Fast,
 
-    #[clap(alias="os")]
+    #[clap(alias = "os")]
     #[clap(about = "Run speed test using speedtest.net (shorthand: st)", long_about = None)]
     Ookla,
 }
@@ -29,19 +28,21 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
 
-    // You can check for the existence of subcommands, and if found use their
-    // matches just as you would the top level cmd
+    print!("Running speed test using ");
     match &cli.command {
         Commands::Cloudflare => {
-            println!("Running speed test using speed.cloudflare.com")
+            println!("speed.cloudflare.com\n");
+            providers::cloudflare::get_server_info();
         }
 
         Commands::Fast => {
-            println!("Running speed test using fast.com")
+            println!("fast.com\n");
+            unimplemented!()
         }
 
         Commands::Ookla => {
-            println!("Running speed test using speedtest.net")
+            println!("speedtest.net\n");
+            unimplemented!()
         }
     }
 }
