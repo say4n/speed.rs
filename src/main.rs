@@ -17,11 +17,11 @@ enum Commands {
     Cloudflare,
 
     #[clap(alias = "nf")]
-    #[clap(about = "Run speed test using fast.com (shorthand: fs)", long_about = None)]
+    #[clap(about = "Run speed test using fast.com (shorthand: nf)", long_about = None)]
     Fast,
 
     #[clap(alias = "os")]
-    #[clap(about = "Run speed test using speedtest.net (shorthand: st)", long_about = None)]
+    #[clap(about = "Run speed test using speedtest.net (shorthand: os)", long_about = None)]
     Ookla,
 }
 
