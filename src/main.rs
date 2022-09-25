@@ -32,7 +32,9 @@ fn main() {
     match &cli.command {
         Commands::Cloudflare => {
             println!("speed.cloudflare.com\n");
+
             providers::cloudflare::get_server_info();
+            providers::cloudflare::measure_latency(None);
         }
 
         Commands::Fast => {

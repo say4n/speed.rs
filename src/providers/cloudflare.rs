@@ -1,26 +1,52 @@
 use core::fmt;
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 use reqwest::blocking::Client;
 use serde_json::{from_str, Value};
 use url::Url;
 
+#[path = "../stats.rs"]
+mod stats;
+
 const BASE_URL: &str = "https://speed.cloudflare.com";
 const ALL_CDN: &str = "locations";
 const ACTIVE_CDN: &str = "cdn-cgi/trace";
+const DOWNLOAD: &str = "__down?bytes=";
+const UPLOAD: &str = "__up";
 
-pub struct ServerInfo {
+struct ServerInfo {
     location: String,
     client_ip: String,
+}
+
+#[derive(Debug)]
+struct LatencyInfo {
+    minimum: Option<Duration>,
+    maximum: Option<Duration>,
+    average: Option<Duration>,
+    median: Option<Duration>,
+    jitter: Option<Duration>,
 }
 
 impl fmt::Display for ServerInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "Server Location: \t{location}\nYour IP: \t\t{ip}",
+            "Server Location:\t{location}\nYour IP:\t\t{ip}",
             location = self.location.replace('"', ""),
             ip = self.client_ip
+        )
+    }
+}
+
+impl fmt::Display for LatencyInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "Latency (avg/jitter):\t{avg:.2} ms / {jitter:.2} ms",
+            avg = self.average.unwrap().as_micros() as f32 / 1_000.0,
+            jitter = self.jitter.unwrap().as_micros() as f32 / 1_000.0
         )
     }
 }
@@ -86,5 +112,50 @@ pub fn get_server_info() {
         ),
     };
 
-    println!("{}", server_info);
+    print!("{}", server_info);
+}
+
+pub fn measure_latency(count: Option<u32>) {
+    let mut latency: Vec<Duration> = Vec::new();
+    let request_url = Url::parse(BASE_URL)
+        .unwrap()
+        .join(&(DOWNLOAD.to_owned().as_str().to_owned() + "0"))
+        .unwrap();
+
+    let client = Client::new();
+
+    for _ in 0..count.unwrap_or(20) {
+        let start = Instant::now();
+        let response = client.get(request_url.clone()).send();
+        let duration = start.elapsed();
+        let server_delay = Duration::from_micros(
+            (response
+                .unwrap()
+                .headers()
+                .get("server-timing")
+                .unwrap()
+                .to_str()
+                .unwrap()
+                .split("=")
+                .last()
+                .unwrap()
+                .parse::<f64>()
+                .unwrap()
+                * 1_000.0) as u64,
+        );
+
+        if duration > server_delay {
+            latency.push(duration - server_delay);
+        }
+    }
+
+    let latency_info = LatencyInfo {
+        minimum: Some(stats::minimum(latency.clone())),
+        maximum: Some(stats::maximum(latency.clone())),
+        average: Some(stats::average(latency.clone())),
+        median: Some(stats::median(latency.clone())),
+        jitter: Some(stats::jitter(latency.clone())),
+    };
+
+    print!("{}", latency_info);
 }
