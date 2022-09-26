@@ -35,6 +35,7 @@ fn main() {
 
             providers::cloudflare::get_server_info();
             providers::cloudflare::measure_latency(None);
+            providers::cloudflare::measure_speed();
         }
 
         Commands::Fast => {
